@@ -1,18 +1,21 @@
 CC = gcc
-CFLAGS = -Wall -g
-PROJ_PATH =
-EXEC = so-cpp
-OBJECTS = main.o
+CFLAGS = -Wall -g -c
+LDFLAGS = -lintro -L.
 
-LDFLAGS = 
+LIB_GEN=ar
+LIB_PARAM = rc
 
-build: $(EXEC)
+PROJ_PATH = .
+LIB_NAME = libso_stdio.so
+OBJECTS = so_stdio.o
 
-$(EXEC): $(OBJECTS)
-	$(CC) $^ $(LDFLAGS) -o $@
+build: $(LIB_NAME)
 
-main.o: $(PROJ_PATH)/main.c
-	$(CC) $(CFLAGS) $^ -c
+$(LIB_NAME): $(OBJECTS)
+	$(LIB_GEN) $(LIB_PARAM) $@ $^
+
+so_stdio.o: $(PROJ_PATH)/so_stdio.c $(PROJ_PATH)/so_stdio.h
+	$(CC) $(CFLAGS) $^ $(LDFLAGS)
 
 clean:
-	rm -f *.o so-cpp
+	rm -f *.o *.h.gch *.so
