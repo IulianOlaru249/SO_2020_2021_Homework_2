@@ -29,10 +29,19 @@
 #define SEEK_END	2	/* Seek from end of file.  */
 
 #define SO_EOF (-1)
+#define FILE_BUFF_SIZE 4096
 
 struct _so_file;
 
-typedef struct _so_file SO_FILE;
+typedef struct _so_file {
+	int _file;
+	int _flags;
+	struct _so_file *_cookie;
+	char _buff[FILE_BUFF_SIZE];
+	int _empty;
+	char *_br;
+	char *_bw;
+} SO_FILE;
 
 FUNC_DECL_PREFIX SO_FILE *so_fopen(const char *pathname, const char *mode);
 FUNC_DECL_PREFIX int so_fclose(SO_FILE *stream);
