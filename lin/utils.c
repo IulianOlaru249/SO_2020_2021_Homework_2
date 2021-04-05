@@ -119,6 +119,7 @@ int _sgetc(SO_FILE *fp)
 		fp->_length = xread(fp, FILE_BUFF_SIZE);
 		if (fp->_length == 0)
 			return SO_EOF;
+
 		/* Mark that the buffer is not empty anymore */
 		fp->_empty = 0;
 		/* Reset the reading cursor to the buffer start */
@@ -147,7 +148,7 @@ int _sputc(int c, SO_FILE *fp)
 	/* When buffer gets full */
 	if (fp->_bw - fp->_buff == FILE_BUFF_SIZE) {
 		/* Write the buffer */
-		xwrite(fp, FILE_BUFF_SIZE);
+		fp->_length = xwrite(fp, FILE_BUFF_SIZE);
 		/* Clear junk */
 		memset(fp->_buff, 0, FILE_BUFF_SIZE);
 		/* Reset the writing cursor to the buffer start */

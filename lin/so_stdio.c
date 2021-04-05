@@ -47,6 +47,8 @@ SO_FILE *so_fopen(const char *pathname, const char *mode)
 	memset(fp->_buff, 0, FILE_BUFF_SIZE);
 	/* Set file cursor */
 	fp->_file_cur = 0;
+	/* Set length */
+	fp->_length = 0;
 
 	return fp;
 }
@@ -113,12 +115,17 @@ size_t so_fread(void *ptr, size_t size, size_t nmemb, SO_FILE *stream)
 			offset += sizeof(unsigned char);
 		}
 
-		if (so_feof(stream))
+		if (so_feof(stream)) {
+			//lseek(stream->_file, count, SEEK_SET);
 			return count;
+		}
 
 		count++;
 	}
 	
+	/* Set file cursor */
+	stream->_file_cur = count;
+
 	return count;
 }
 
@@ -150,6 +157,9 @@ size_t so_fwrite(const void *ptr, size_t size, size_t nmemb, SO_FILE *stream)
 		count++;
 	}
 
+	/* Set file cursor */
+	stream->_file_cur = lseek(stream->_file, 0, SEEK_CUR) + (nmemb - stream->_length);
+
 	return count;
 }
 
@@ -157,7 +167,6 @@ int so_fflush(SO_FILE *stream)
 {
 	int ret = 0;
 	int bytes_written = 0;
-
 	/* If the laso opration before flush was write */
 	if (stream->_prev_op == WRITE) {
 		/* Write all contents */
@@ -193,7 +202,7 @@ int so_fseek(SO_FILE *stream, long offset, int whence)
 		ret = SO_EOF;
 
 	/* Store the file cursor */
-	stream->_file_cur = whence + offset;
+	stream->_file_cur = res;
 
 	return ret;
 }
@@ -203,7 +212,7 @@ long so_ftell(SO_FILE *stream)
 	if (stream == NULL)
 		return -1;
 
-	return lseek(stream->_file, 0, SEEK_CUR);
+	return stream->_file_cur;
 }
 
 int so_feof(SO_FILE *stream)
