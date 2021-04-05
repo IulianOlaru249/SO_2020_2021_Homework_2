@@ -22,7 +22,11 @@
 #error "Unknown platform"
 #endif
 
-#include <stdlib.h>
+#include <unistd.h>
+
+#define NOOP	0
+#define READ	1
+#define WRITE	2
 
 #define SEEK_SET	0	/* Seek from beginning of file.  */
 #define SEEK_CUR	1	/* Seek from current position.  */
@@ -36,11 +40,14 @@ struct _so_file;
 typedef struct _so_file {
 	int _file;
 	int _flags;
+	int _eof;
 	struct _so_file *_cookie;
 	char _buff[FILE_BUFF_SIZE];
 	int _empty;
 	char *_br;
 	char *_bw;
+	int _prev_op;
+	int err;
 } SO_FILE;
 
 FUNC_DECL_PREFIX SO_FILE *so_fopen(const char *pathname, const char *mode);
