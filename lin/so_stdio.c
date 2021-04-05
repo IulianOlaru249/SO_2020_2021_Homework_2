@@ -36,6 +36,8 @@ SO_FILE *so_fopen(const char *pathname, const char *mode)
 	fp->_cookie = fp;
 	/* Set prev opperation */
 	fp->_prev_op = NOOP;
+	/* Set err code */
+	fp->err = 0;
 	/* Set empty checker */
 	fp->_empty = 1;
 	/* Set indexes for wread and write */
@@ -62,7 +64,7 @@ int so_fclose(SO_FILE *stream)
 
 	/* If there is data stored in the buffer */
 	if (!stream->_empty)
-		so_fflush(stream);
+		ret = so_fflush(stream);
 
 	if (close(stream->_file) < 0)
 		ret = SO_EOF;
@@ -82,10 +84,12 @@ int so_fileno(SO_FILE *stream)
 
 int so_fgetc(SO_FILE *stream)
 {
-	int ret = 0;
+	int ret = -1;
 
 	ret = _sgetc(stream);
 
+	if (ret == SO_EOF)
+		stream->_eof = SO_EOF;
 	return ret;
 }
 
@@ -106,6 +110,10 @@ size_t so_fread(void *ptr, size_t size, size_t nmemb, SO_FILE *stream)
 			memccpy(ptr + offset, &byte, 1, sizeof(unsigned char));
 			offset += sizeof(unsigned char);
 		}
+
+		if (so_feof(stream))
+			return count;
+
 		count++;
 	}
 	
@@ -145,10 +153,15 @@ size_t so_fwrite(const void *ptr, size_t size, size_t nmemb, SO_FILE *stream)
 
 int so_fflush(SO_FILE *stream)
 {
+	int ret = 0;
+	int bytes_written = 0;
 	/* As log as there is data in the buffer */
-	if (stream->_prev_op == WRITE)
-		xwrite(stream, stream->_bw - stream->_buff);
-	
+	if (stream->_prev_op == WRITE) {
+		bytes_written = xwrite(stream, stream->_bw - stream->_buff);
+		if (bytes_written != stream->_bw - stream->_buff)
+			ret = -1;
+	}
+
 	/* Mark buffer as empty */
 	stream->_empty = 1;
 	/* Clear the memory from junk */
@@ -157,12 +170,19 @@ int so_fflush(SO_FILE *stream)
 	stream->_br = stream->_buff;
 	stream->_bw = stream->_buff;
 
-	return 0;
+	return ret;
 }
 
 int so_fseek(SO_FILE *stream, long offset, int whence)
 {
-	return 0;
+	int ret = 0;
+	int res = 0;
+
+	res = lseek(stream->_file, offset, whence);
+	if (res < 0)
+		ret = SO_EOF;
+
+	return ret;
 }
 
 long so_ftell(SO_FILE *stream)
@@ -172,12 +192,22 @@ long so_ftell(SO_FILE *stream)
 
 int so_feof(SO_FILE *stream)
 {
+	if (stream->_eof == SO_EOF)
+		return SO_EOF;
+
 	return 0;
 }
 
 int so_ferror(SO_FILE *stream)
 {
-	return 0;
+	int ret = 0;
+
+	if (stream == NULL)
+		return -1;
+
+	ret = stream->err;
+
+	return ret;
 }
 
 SO_FILE *so_popen(const char *command, const char *type)

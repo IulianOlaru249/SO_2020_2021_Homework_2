@@ -60,10 +60,8 @@ int xread(SO_FILE *fp, int count)
 			count - bytes_read);
 
 		/* End of file detected */
-		if (bytes_read_now == 0) {
-			fp->_eof = SO_EOF;
+		if (bytes_read_now == 0)
 			break;
-		}
 
 		/* Error while trying to read from file */
 		if (bytes_read_now < 0) {
@@ -73,11 +71,9 @@ int xread(SO_FILE *fp, int count)
 
 		bytes_read += bytes_read_now;
 
-		/* If it could not fill the buffer, then is eof */
-		if (bytes_read_now < count) {
-			fp->_eof = SO_EOF;
+		/* If it could not fill the buffer */
+		if (bytes_read_now < count)
 			break;
-		}
 	}
 
 	return bytes_read;
@@ -116,11 +112,13 @@ int _sgetc(SO_FILE *fp)
 	 * If the buffer is empty, or there is not enough data,
 	 *  refresh the buffer
 	 */
-	if (fp->_empty || fp->_br - fp->_buff > FILE_BUFF_SIZE - 1) {
+	if (fp->_empty || fp->_br - fp->_buff > fp->_length - 1) {
 		/* Clear junk */
 		memset(fp->_buff, 0, FILE_BUFF_SIZE);
 		/* Refresh */
-		xread(fp, FILE_BUFF_SIZE);
+		fp->_length = xread(fp, FILE_BUFF_SIZE);
+		if (fp->_length == 0)
+			return SO_EOF;
 		/* Mark that the buffer is not empty anymore */
 		fp->_empty = 0;
 		/* Reset the reading cursor to the buffer start */

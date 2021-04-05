@@ -46,8 +46,10 @@ typedef struct _so_file {
 	int _empty;
 	char *_br;
 	char *_bw;
+	int _file_cur;
 	int _prev_op;
 	int err;
+	int _length;
 } SO_FILE;
 
 FUNC_DECL_PREFIX SO_FILE *so_fopen(const char *pathname, const char *mode);
