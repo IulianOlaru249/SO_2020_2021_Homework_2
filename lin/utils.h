@@ -15,6 +15,9 @@
 #define	_SRD		0x0004	/* OK to read */
 #define _SWR		0x0008	/* OK to write */
 
+#define std_in   0
+#define std_out  1
+
 int _sflags(const char *mode, int *optr);
 SO_FILE *_sfp(void);
 int _sgetc(SO_FILE *fp);

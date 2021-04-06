@@ -23,6 +23,7 @@
 #endif
 
 #include <unistd.h>
+#include <sys/wait.h>
 
 #define NOOP	0
 #define READ	1
@@ -38,6 +39,7 @@
 struct _so_file;
 
 typedef struct _so_file {
+	pid_t pid;
 	int _file;
 	int _flags;
 	int _eof;

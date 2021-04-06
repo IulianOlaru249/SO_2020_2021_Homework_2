@@ -60,8 +60,10 @@ int xread(SO_FILE *fp, int count)
 			count - bytes_read);
 
 		/* End of file detected */
-		if (bytes_read_now == 0)
+		if (bytes_read_now == 0) {
+			fp->_eof = SO_EOF;
 			break;
+		}
 
 		/* Error while trying to read from file */
 		if (bytes_read_now < 0) {
@@ -117,8 +119,9 @@ int _sgetc(SO_FILE *fp)
 		memset(fp->_buff, 0, FILE_BUFF_SIZE);
 		/* Refresh */
 		fp->_length = xread(fp, FILE_BUFF_SIZE);
-		if (fp->_length == 0)
+		if (fp->_length == 0) {
 			return SO_EOF;
+		}
 
 		/* Mark that the buffer is not empty anymore */
 		fp->_empty = 0;
