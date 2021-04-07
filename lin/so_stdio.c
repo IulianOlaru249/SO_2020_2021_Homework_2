@@ -74,7 +74,6 @@ int so_fclose(SO_FILE *stream)
 
 	if (close(stream->_file) < 0)
 		ret = SO_EOF;
-
 	free(stream);
 
 	return ret;
@@ -129,8 +128,6 @@ size_t so_fread(void *ptr, size_t size, size_t nmemb, SO_FILE *stream)
 
 	/* Set file cursor */
 	stream->_file_cur = count;
-
-
 	return count;
 }
 
@@ -163,6 +160,9 @@ size_t so_fwrite(const void *ptr, size_t size, size_t nmemb, SO_FILE *stream)
 			ret = so_fputc(byte, stream);
 			if (ret == -1)
 				break;
+
+			if (so_ferror(stream))
+				return SO_EOF;
 			aux++;
 		}
 		count++;
@@ -182,6 +182,7 @@ int so_fflush(SO_FILE *stream)
 	if (stream->_prev_op == WRITE) {
 		/* Write all contents */
 		bytes_written = xwrite(stream, stream->_bw - stream->_buff);
+		// printf("%d\n", bytes_written);
 		if (bytes_written != stream->_bw - stream->_buff)
 			ret = -1;
 	}
@@ -252,29 +253,17 @@ SO_FILE *so_popen(const char *command, const char *type)
 {
 	SO_FILE *fp = NULL;
 	pid_t pid = -1;
-	int pdes[2] = {0};
+	int pdes[2] = {0, 0};
 	int ret = 0;
-	char *path = NULL;
-	char *token = NULL;
-	char copy_command[256];
-
-	/* Get the path to the file */
-	strncpy(copy_command, command, 256);
-	token = strtok(copy_command, " ");
-	while (token != NULL) {
-		path = token;
-		token = strtok(NULL, " ");
-	}
+	int fd = 0;
 
 	/* Check flags */
 	if ((*type != 'r' && *type != 'w') || type[1] != '\0')
 		return NULL;
 
 	/* Open pipe */
-	if (pipe(pdes) < 0) {
-		free(fp);
+	if (pipe(pdes) < 0)
 		return NULL;
-	}
 
 	/* Fork the process */
 	pid = fork();
@@ -287,37 +276,69 @@ SO_FILE *so_popen(const char *command, const char *type)
 	case 0:		/* Child process */
 		/* Redirect pipe */
 		if (*type == 'r') {
-			(void) close(pdes[0]);
-			(void)dup2(pdes[1], std_out);
-			(void)close(pdes[1]);
+			close(pdes[0]);
+			if (pdes[1] != std_out) {
+				ret = dup2(pdes[1], std_out);
+				if (ret < 0)
+					return NULL;
+				close(pdes[1]);
+			}
 		} else {
-			(void)close(pdes[1]);
-			(void)dup2(pdes[0], std_in);
-			(void)close(pdes[0]);
+			close(pdes[1]);
+			if (pdes[0] != std_in) {
+				ret = dup2(pdes[0], std_in);
+				if (ret < 0)
+					return NULL;
+				close(pdes[0]);
+			}
 		}
-
 		/* Execute the command */
-		ret = execl("/usr/bin", "sh", "-c", command, NULL);
-		exit(ret);
+		ret = execlp("/bin/sh", "sh", "-c", command, NULL);
+		return NULL;
 	default:	/* Parent process */
 		/* Redirect pipe */
-		if (*type == 'r')
-			(void)close(pdes[1]);
-		else
-			(void)close(pdes[0]);
+		if (*type == 'r') {
+			fd = pdes[0];
+			close(pdes[1]);
+		} else {
+			fd = pdes[1];
+			close(pdes[0]);
+		}
 
 		/* Open the file as normal */
-		fp = so_fopen(path, type);
+		fp = _sfp();
 		if (fp == NULL)
 			return NULL;
 
+		/* Set flags */
+		fp->_flags = 1;
+		/* Set fd */
+		fp->_file = fd;
 		/* Set pid */
 		fp->pid = pid;
+		/* Set eof checker */
+		fp->_eof = 0;
+		/* Set file pointer */
+		fp->_cookie = fp;
+		/* Set prev opperation */
+		fp->_prev_op = NOOP;
+		/* Set err code */
+		fp->err = 0;
+		/* Set empty checker */
+		fp->_empty = 1;
+		/* Set indexes for wread and write */
+		fp->_br = fp->_buff;
+		fp->_bw = fp->_buff;
+		/* Set buffer */
+		memset(fp->_buff, 0, FILE_BUFF_SIZE);
+		/* Set file cursor */
+		fp->_file_cur = 0;
+		/* Set length */
+		fp->_length = 0;
 
-		break;
+		return fp;
 	}
-
-	return fp;
+	return NULL;
 }
 
 int so_pclose(SO_FILE *stream)
@@ -333,15 +354,13 @@ int so_pclose(SO_FILE *stream)
 	/* Store pid and close the stream */
 	stream_pid = stream->pid;
 	ret = so_fclose(stream);
+	if (ret < 0)
+		stat = 0;
 
 	/* Wait for pid */
 	pid = waitpid(stream_pid, &stat, 0);
-	if (pid < 0)
-		ret = -1;
+	if (pid == -1)
+		return SO_EOF;
 
-	/* Check the stat */
-	if (stat > 0)
-		ret = 0;
-
-	return ret;
+	return stat;
 }
