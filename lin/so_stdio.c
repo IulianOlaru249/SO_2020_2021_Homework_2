@@ -294,7 +294,7 @@ SO_FILE *so_popen(const char *command, const char *type)
 		}
 		/* Execute the command */
 		ret = execlp("/bin/sh", "sh", "-c", command, NULL);
-		return NULL;
+		exit(ret);
 	default:	/* Parent process */
 		/* Redirect pipe */
 		if (*type == 'r') {
