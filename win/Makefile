@@ -1,15 +1,19 @@
 CC = cl
-PROJ_PATH =
-EXEC =
-OBJECTS = main.obj
-FLAGS = /MD
+PROJ_PATH = .
+LIB_NAME = libso_stdio.dll
+OBJECTS = so_stdio.obj
+FLAGS = /nologo /W3 /EHsc
 
-build: $(EXEC)
+LIB = link
+LIB_FLAGS = /dll /out:libso_stdio.dll /implib:libso_stdio.lib /nologo
 
-$(EXEC): $(OBJECTS)
-	$(CC) $(FLAGS) /Fe$@ $**
+build: $(LIB_NAME)
 
-main.obj: $(PROJ_PATH)\main.c
+$(LIB_NAME): $(OBJECTS)
+	cl /LD $**
+	# $(LIB) $(LIB_FLAGS) $**
+
+so_stdio.obj: $(PROJ_PATH)\so_stdio.c
 	$(CC) $(FLAGS) /c $**
 
 clean:
