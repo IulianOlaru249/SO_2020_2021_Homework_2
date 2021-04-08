@@ -1,8 +1,6 @@
 #include "utils.h"
 #include <stdio.h>
 
-/* ../../../SO_2020_2021_Homework_2/lin/ */
-
 SO_FILE *so_fopen(const char *pathname, const char *mode)
 {
 	SO_FILE *fp = NULL;
