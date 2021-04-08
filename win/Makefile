@@ -1,21 +1,24 @@
-CC = cl
-PROJ_PATH = .
-LIB_NAME = libso_stdio.dll
-OBJECTS = so_stdio.obj
-FLAGS = /nologo /W3 /EHsc
+# CC = cl
+# PROJ_PATH = .
+# LIB_NAME = so_stdio.dll
+# OBJECTS = so_stdio.obj
+# FLAGS = /nologo /W3 /c
 
-LIB = link
-LIB_FLAGS = /dll /out:libso_stdio.dll /implib:libso_stdio.lib /nologo
+# LIB = link
+# LIB_FLAGS = /nologo /dll /out:so_stdio.dll /implib:so_stdio.lib
 
-build: $(LIB_NAME)
+# build: so_stdio.dll
 
-$(LIB_NAME): $(OBJECTS)
-	cl /LD $**
-	# $(LIB) $(LIB_FLAGS) $**
+# so_stdio.dll: so_stdio.obj
+# 	link /nologo /dll /out:so_stdio.dll /implib:so_stdio.lib so_stdio.obj
 
-so_stdio.obj: $(PROJ_PATH)\so_stdio.c
-	$(CC) $(FLAGS) /c $**
+# so_stdio.obj: so_stdio.c
+# 	cl /nologo /W3 /c /DDLL_EXPORTS so_stdio.c
+
+build:
+	cl /nologo /W3 /c /MD /DDLL_EXPORT utils.c
+	cl /nologo /W3 /c /MD /DDLL_EXPORT so_stdio.c
+	link /nologo /dll /out:so_stdio.dll /implib:so_stdio.lib so_stdio.obj utils.obj
 
 clean:
-	del *.obj *.exe
-
+	del *.obj *.exe so_stdio.dll so_stdio.lib so_stdio.exp

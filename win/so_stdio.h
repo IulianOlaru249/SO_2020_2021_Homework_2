@@ -4,7 +4,7 @@
  * 2019, Operating Systems
  */
 
-// #define _WIN32
+#define _WIN32
 
 #ifndef SO_STDIO_H
 #define SO_STDIO_H
@@ -40,8 +40,8 @@
 struct _so_file;
 
 typedef struct _so_file {
-	//pid_t pid;
-	int _file;
+	int pid;
+	HANDLE _file;
 	int _flags;
 	int _eof;
 	struct _so_file *_cookie;
