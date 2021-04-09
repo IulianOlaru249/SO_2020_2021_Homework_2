@@ -89,9 +89,8 @@ int _sgetc(SO_FILE *fp)
 		memset(fp->_buff, 0, FILE_BUFF_SIZE);
 		/* Refresh */
 		fp->_length = xread(fp, FILE_BUFF_SIZE);
-		if (fp->_length == 0) {
+		if (fp->_length == 0)
 			return SO_EOF;
-		}
 
 		/* Mark that the buffer is not empty anymore */
 		fp->_empty = 0;

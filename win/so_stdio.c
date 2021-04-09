@@ -23,7 +23,7 @@ SO_FILE *so_fopen(const char *pathname, const char *mode)
 			fHandle = CreateFile(
 				pathname,
 				GENERIC_ALL,		/* access mode */
-				FILE_SHARE_READ | FILE_SHARE_WRITE, 			/* sharing option */
+				FILE_SHARE_READ | FILE_SHARE_WRITE, 	/* sharing option */
 				NULL,			/* security attributes */
 				OPEN_EXISTING,		/* open only if it exists */
 				0,
@@ -33,10 +33,10 @@ SO_FILE *so_fopen(const char *pathname, const char *mode)
 			/* Open stream */
 			fHandle = CreateFile(
 				pathname,
-				GENERIC_READ,		/* access mode */
-				FILE_SHARE_READ|FILE_SHARE_WRITE, 	/* sharing option */
-				NULL,			/* security attributes */
-				OPEN_EXISTING,		/* open only if it exists */
+				GENERIC_READ,
+				FILE_SHARE_READ|FILE_SHARE_WRITE,
+				NULL,
+				OPEN_EXISTING,
 				0,
 				NULL
 			);
@@ -48,10 +48,10 @@ SO_FILE *so_fopen(const char *pathname, const char *mode)
 			/* Open stream */
 			fHandle = CreateFile(
 				pathname,
-				GENERIC_ALL,		/* access mode */
-				FILE_SHARE_READ | FILE_SHARE_WRITE, 			/* sharing option */
-				NULL,			/* security attributes */
-				CREATE_ALWAYS,		/* open only if it exists */
+				GENERIC_ALL,
+				FILE_SHARE_READ | FILE_SHARE_WRITE,
+				NULL,
+				CREATE_ALWAYS,
 				0,
 				NULL
 			);
@@ -59,11 +59,11 @@ SO_FILE *so_fopen(const char *pathname, const char *mode)
 			/* Open stream */
 			fHandle = CreateFile(
 				pathname,
-				GENERIC_WRITE,		/* access mode */
-				FILE_SHARE_READ|FILE_SHARE_WRITE, 			/* sharing option */
-				NULL,			/* security attributes */
+				GENERIC_WRITE,
+				FILE_SHARE_READ|FILE_SHARE_WRITE,
+				NULL,
 				CREATE_ALWAYS,
-				0,			/* file attributes */
+				0,
 				NULL
 			);
 
@@ -76,19 +76,19 @@ SO_FILE *so_fopen(const char *pathname, const char *mode)
 				pathname,
 				GENERIC_READ | FILE_APPEND_DATA,
 				FILE_SHARE_READ|FILE_SHARE_WRITE,
-				NULL,			/* security attributes */
+				NULL,
 				OPEN_ALWAYS,
-				0,	/* file attributes */
+				0,
 				NULL
 			);
 		else
 			/* Open stream */
 			fHandle = CreateFile(
 				pathname,
-				FILE_APPEND_DATA,	/* access mode */
-				FILE_SHARE_READ|FILE_SHARE_WRITE, 			/* sharing option */
-				NULL,			/* security attributes */
-				OPEN_ALWAYS,		/* open only if it exists */
+				FILE_APPEND_DATA,
+				FILE_SHARE_READ|FILE_SHARE_WRITE,
+				NULL,
+				OPEN_ALWAYS,
 				0,
 				NULL
 			);
@@ -192,9 +192,14 @@ size_t so_fread(void *ptr, size_t size, size_t nmemb, SO_FILE *stream)
 		for (j = 0; j < size; j++) {
 			/* Append elements to user buffer */
 			byte = so_fgetc(stream);
-			if (byte == -1 || (unsigned char *)ptr + offset == NULL || stream->_eof == SO_EOF)
+			if (byte == -1 ||
+				(unsigned char *)ptr + offset == NULL ||
+				stream->_eof == SO_EOF)
 				break;
-			memccpy((unsigned char *)ptr + offset, &byte, 1, sizeof(unsigned char));
+			memccpy((unsigned char *)ptr + offset,
+				&byte,
+				1,
+				sizeof(unsigned char));
 			offset += sizeof(unsigned char);
 		}
 
@@ -249,8 +254,9 @@ size_t so_fwrite(const void *ptr, size_t size, size_t nmemb, SO_FILE *stream)
 	}
 
 	/* Set file cursor */
-	// stream->_file_cur = lseek(stream->_file, 0, SEEK_CUR) + (nmemb - stream->_length);
-	stream->_file_cur = SetFilePointer(stream->_file, 0, NULL, FILE_CURRENT) + (nmemb - stream->_length);
+	stream->_file_cur = SetFilePointer(stream->_file, 0,
+		NULL,
+		FILE_CURRENT) + (nmemb - stream->_length);
 
 	return count;
 }
@@ -332,7 +338,7 @@ int so_ferror(SO_FILE *stream)
 
 SO_FILE *so_popen(const char *command, const char *type)
 {
-	return NULL;	
+	return NULL;
 }
 
 int so_pclose(SO_FILE *stream)
