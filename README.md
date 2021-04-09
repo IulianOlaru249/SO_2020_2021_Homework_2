@@ -11,19 +11,25 @@ General Structure
 1. The goal of the project is to implement a version of the C standard input/output library.
 2. The implementation is platform dependant. There is support for Windows (win32 SDK for windows 7) and Linux.
 
-Working under Linux
+Structure
 -
 
 1. Code structure
 
-* ├── LICENSE
-* ├── lin
-* │   ├── GNUmakefile
-* │   ├── so_stdio.c
-* │   ├── so_stdio.h
-* │   ├── utils.c
-* │   └── utils.h
-* └── README.md
+├── LICENSE
+
+Linux | Windows
+------------ | -------------
+ ├── lin                   |        └── win
+ │   ├── GNUmakefile       |           ├── Makefile
+ │   ├── so_stdio.c        |            ├── so_stdio.c
+ │   ├── so_stdio.h        |            ├── so_stdio.h
+ │   ├── utils.c           |            ├── utils.c
+ │   └── utils.h           |            └── utils.h
+ 
+ └── README.md            
+
+** The Windows implementation does not support popen and pclose! **
 
 ***Flow***
 
@@ -55,6 +61,17 @@ Doing this, we guarantee that we get the ammound of data that we asked for.
 
 Implementation Details
 -
+
+The only diffrence between Linux and Windows is in the syscalls made.
+
+Linux | Windows
+------------ | -------------
+open  | OpenFile
+close | CloseHandle
+write | WriteFile
+read  | ReadFile
+lseek | SetFilePointer
+
 
 In memory, the file is modeled by a structure, described in so_stdio.h.
 
@@ -112,11 +129,12 @@ Windows | Makefile | nmake
 * Object following object files are created:
   * utils.o - has the implementation of *auxiliary functions* used by the library functions
   * so_stdio.o - has the implementation of the *library functions*
-* The object files are linked in order to create the shared library *libso_stdio.so*
+* The object files are linked in order to create the shared library *libso_stdio.so / .dll*
  
 ***To use***
 
-The library libso_stdio.h must be linked to the target object.
+The library libso_stdio.so / ( .dll + .lib ) must be linked to the target object.
+The header so_unistd.h must be included.
   
 Bibliography
 -
@@ -130,12 +148,12 @@ Bibliography
     * Pipes: https://www.geeksforgeeks.org/pipe-system-call/
     * Linux errors: https://www-numi.fnal.gov/offline_software/srt_public_context/WebDocs/Errors/unix_system_errors.html
 
+* Useful Windows Links:
+    * Open files: https://docs.microsoft.com/en-us/windows/win32/fileio/opening-a-file-for-reading-or-writing
+    * File management: https://www.installsetupconfig.com/win32programming/windowsfileapis4_24.html
+    * File flags: https://docs.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-createfilea
+
 Git
 -
 
 1. https://github.com/IulianOlaru249/SO_2020_2021_Homework_2/
-
-Working under Windows
--
-
-(TBA)
