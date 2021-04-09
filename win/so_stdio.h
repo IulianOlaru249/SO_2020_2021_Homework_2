@@ -4,8 +4,6 @@
  * 2019, Operating Systems
  */
 
-#define _WIN32
-
 #ifndef SO_STDIO_H
 #define SO_STDIO_H
 
@@ -24,8 +22,6 @@
 #error "Unknown platform"
 #endif
 
-#include <stdlib.h>
-
 #define NOOP	0
 #define READ	1
 #define WRITE	2
@@ -35,7 +31,7 @@
 #define SEEK_END	2	/* Seek from end of file.  */
 
 #define SO_EOF (-1)
-#define FILE_BUFF_SIZE	4096
+#define FILE_BUFF_SIZE 4096
 
 struct _so_file;
 
@@ -47,13 +43,12 @@ typedef struct _so_file {
 	struct _so_file *_cookie;
 	char _buff[FILE_BUFF_SIZE];
 	int _empty;
-	int _length;
 	char *_br;
 	char *_bw;
 	int _file_cur;
 	int _prev_op;
-	int _err;
-
+	int err;
+	int _length;
 } SO_FILE;
 
 FUNC_DECL_PREFIX SO_FILE *so_fopen(const char *pathname, const char *mode);

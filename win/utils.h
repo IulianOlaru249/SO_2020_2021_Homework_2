@@ -6,20 +6,22 @@
 #include <fcntl.h>
 
 #include "so_stdio.h"
-#include <stdio.h>
 
-#define _SRW    0x0010    /* Open for writing+reading */
-#define _SRD    0x0004    /* Open for reading */
-#define _SWR    0x0008    /* Open for writing */
+#define DEFFILEMODE	0600
+#define EINVAL		22	/* Invalid argument */
+#define EBADF		9	/* Bad file number */
 
-#define std_in  0
-#define std_out 1
+#define _SRW		0x0010	/* open for reading & writing */
+#define	_SRD		0x0004	/* OK to read */
+#define _SWR		0x0008	/* OK to write */
+
+#define std_in   0
+#define std_out  1
 
 SO_FILE *_sfp(void);
-int xread(SO_FILE *fp, int count);
 int _sgetc(SO_FILE *fp);
-int xwrite(SO_FILE *fp, size_t count);
 int _sputc(int c, SO_FILE *fp);
-
+int xread(SO_FILE *fp, int count);
+int xwrite(SO_FILE *fp, size_t count);
 
 #endif

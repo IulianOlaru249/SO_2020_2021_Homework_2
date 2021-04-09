@@ -1,19 +1,17 @@
-#include "so_stdio.h"
+#include "utils.h"
 
 SO_FILE *so_fopen(const char *pathname, const char *mode)
 {
-	// CREATE_ALWAYS
-
 	SO_FILE *fp = NULL;
-	HANDLE fHandle;
-	long oflags1 = 0, oflags2 = 0, flags = 0;
+	HANDLE fHandle = 0;
 	char c = *mode++;
 	char c2 = *mode;
+	int oflags = 0, flags = 1;
 
 	/* Allocate memory */
 	fp = _sfp();
 	if (fp == NULL)
-		return NULL;
+		return (NULL);
 
 	/* Open Stream */
 	switch (c) {
@@ -25,7 +23,7 @@ SO_FILE *so_fopen(const char *pathname, const char *mode)
 			fHandle = CreateFile(
 				pathname,
 				GENERIC_ALL,		/* access mode */
-				0, 			/* sharing option */
+				FILE_SHARE_READ | FILE_SHARE_WRITE, 			/* sharing option */
 				NULL,			/* security attributes */
 				OPEN_EXISTING,		/* open only if it exists */
 				0,
@@ -36,7 +34,7 @@ SO_FILE *so_fopen(const char *pathname, const char *mode)
 			fHandle = CreateFile(
 				pathname,
 				GENERIC_READ,		/* access mode */
-				0, 	/* sharing option */
+				FILE_SHARE_READ|FILE_SHARE_WRITE, 	/* sharing option */
 				NULL,			/* security attributes */
 				OPEN_EXISTING,		/* open only if it exists */
 				0,
@@ -51,9 +49,9 @@ SO_FILE *so_fopen(const char *pathname, const char *mode)
 			fHandle = CreateFile(
 				pathname,
 				GENERIC_ALL,		/* access mode */
-				0, 			/* sharing option */
+				FILE_SHARE_READ | FILE_SHARE_WRITE, 			/* sharing option */
 				NULL,			/* security attributes */
-				OPEN_ALWAYS,		/* open only if it exists */
+				CREATE_ALWAYS,		/* open only if it exists */
 				0,
 				NULL
 			);
@@ -62,10 +60,10 @@ SO_FILE *so_fopen(const char *pathname, const char *mode)
 			fHandle = CreateFile(
 				pathname,
 				GENERIC_WRITE,		/* access mode */
-				0, 			/* sharing option */
+				FILE_SHARE_READ|FILE_SHARE_WRITE, 			/* sharing option */
 				NULL,			/* security attributes */
 				CREATE_ALWAYS,
-				FILE_ATTRIBUTE_NORMAL,	/* file attributes */
+				0,			/* file attributes */
 				NULL
 			);
 
@@ -77,18 +75,18 @@ SO_FILE *so_fopen(const char *pathname, const char *mode)
 			fHandle = CreateFile(
 				pathname,
 				GENERIC_READ | FILE_APPEND_DATA,
-				FILE_SHARE_READ,
+				FILE_SHARE_READ|FILE_SHARE_WRITE,
 				NULL,			/* security attributes */
 				OPEN_ALWAYS,
-				FILE_ATTRIBUTE_NORMAL,	/* file attributes */
+				0,	/* file attributes */
 				NULL
 			);
 		else
 			/* Open stream */
 			fHandle = CreateFile(
 				pathname,
-				GENERIC_ALL,		/* access mode */
-				0, 			/* sharing option */
+				FILE_APPEND_DATA,	/* access mode */
+				FILE_SHARE_READ|FILE_SHARE_WRITE, 			/* sharing option */
 				NULL,			/* security attributes */
 				OPEN_ALWAYS,		/* open only if it exists */
 				0,
@@ -109,21 +107,21 @@ SO_FILE *so_fopen(const char *pathname, const char *mode)
 
 	/* Set pid */
 	fp->pid = -1;
-	/* Set eof */
-	fp->_eof = 0;
 	/* Set file descriptor */
 	fp->_file = fHandle;
 	/* Set flags */
-	fp->_flags = 1;
+	fp->_flags = flags;
+	/* Set eof checker */
+	fp->_eof = 0;
 	/* Set file pointer */
 	fp->_cookie = fp;
-	/* Set prev op */
+	/* Set prev opperation */
 	fp->_prev_op = NOOP;
 	/* Set err code */
-	fp->_err = 0;
+	fp->err = 0;
 	/* Set empty checker */
 	fp->_empty = 1;
-	/* Set indexes for read/write */
+	/* Set indexes for wread and write */
 	fp->_br = fp->_buff;
 	fp->_bw = fp->_buff;
 	/* Set buffer */
@@ -141,29 +139,30 @@ int so_fclose(SO_FILE *stream)
 	int ret = 0;
 
 	if (stream == NULL)
-		return -1;
+		return -EBADF;
 
 	if (stream->_flags == 0)
-		return -1;
+		return SO_EOF;
 
 	if (stream->_cookie == NULL)
-		return -1;
+		return SO_EOF;
 
+	/* If there is data stored in the buffer */
 	if (!stream->_empty)
 		ret = so_fflush(stream);
 
 	if (CloseHandle(stream->_file) == 0)
-		return -1;
+		ret = SO_EOF;
 
 	free(stream);
 
-    	return ret;
+	return ret;
 }
 
 HANDLE so_fileno(SO_FILE *stream)
 {
 	if (stream == NULL)
-		return -1;
+		return -EBADF;
 
 	return stream->_file;
 }
@@ -174,9 +173,8 @@ int so_fgetc(SO_FILE *stream)
 
 	ret = _sgetc(stream);
 
-	if(ret == -1)
+	if (ret == SO_EOF)
 		stream->_eof = SO_EOF;
-
 	return ret;
 }
 
@@ -187,7 +185,6 @@ size_t so_fread(void *ptr, size_t size, size_t nmemb, SO_FILE *stream)
 	unsigned char byte = 0;
 	int offset = 0;
 	int count = 0;
-	unsigned char *aux = (unsigned char *)ptr;
 
 	/* Read nmemb elements */
 	for (i = 0; i < nmemb; i++) {
@@ -195,9 +192,9 @@ size_t so_fread(void *ptr, size_t size, size_t nmemb, SO_FILE *stream)
 		for (j = 0; j < size; j++) {
 			/* Append elements to user buffer */
 			byte = so_fgetc(stream);
-			if (byte == -1 || aux + offset == NULL || stream->_eof == SO_EOF)
+			if (byte == -1 || (unsigned char *)ptr + offset == NULL || stream->_eof == SO_EOF)
 				break;
-			memccpy(aux + offset, &byte, 1, sizeof(unsigned char));
+			memccpy((unsigned char *)ptr + offset, &byte, 1, sizeof(unsigned char));
 			offset += sizeof(unsigned char);
 		}
 
@@ -251,6 +248,10 @@ size_t so_fwrite(const void *ptr, size_t size, size_t nmemb, SO_FILE *stream)
 		count++;
 	}
 
+	/* Set file cursor */
+	// stream->_file_cur = lseek(stream->_file, 0, SEEK_CUR) + (nmemb - stream->_length);
+	stream->_file_cur = SetFilePointer(stream->_file, 0, NULL, FILE_CURRENT) + (nmemb - stream->_length);
+
 	return count;
 }
 
@@ -282,12 +283,31 @@ int so_fflush(SO_FILE *stream)
 
 int so_fseek(SO_FILE *stream, long offset, int whence)
 {
-    return 0;
+	int ret = 0;
+	int res = 0;
+
+	/* Handle the buffer */
+	res = so_fflush(stream);
+	if (res < 0)
+		ret = -1;
+
+	/* Move the file cursor */
+	res = SetFilePointer(stream->_file, offset, NULL, whence);
+	if (res < 0)
+		ret = SO_EOF;
+
+	/* Store the file cursor */
+	stream->_file_cur = res;
+
+	return ret;
 }
 
 long so_ftell(SO_FILE *stream)
 {
-    return 0;
+	if (stream == NULL)
+		return -1;
+
+	return stream->_file_cur;
 }
 
 int so_feof(SO_FILE *stream)
@@ -305,17 +325,17 @@ int so_ferror(SO_FILE *stream)
 	if (stream == NULL)
 		return -1;
 
-	ret = stream->_err;
+	ret = stream->err;
 
 	return ret;
 }
 
 SO_FILE *so_popen(const char *command, const char *type)
 {
-    return NULL;
+	return NULL;	
 }
 
 int so_pclose(SO_FILE *stream)
 {
-    return 0;
+	return 0;
 }

@@ -1,4 +1,5 @@
 #include "utils.h"
+#include <stdio.h>
 
 SO_FILE *_sfp(void)
 {
@@ -20,60 +21,31 @@ int xread(SO_FILE *fp, int count)
 	while (bytes_read < count) {
 		ret = ReadFile(fp->_file,
 			fp->_buff + bytes_read,
-			count - bytes_read_now,
+			count - bytes_read,
 			&bytes_read_now,
 			NULL);
 
-		/* EOF detected */
+		/* End of file detected */
 		if (bytes_read_now == 0) {
+			fp->err = -2;
 			fp->_eof = SO_EOF;
 			break;
 		}
 
-		/* IO error */
-		if (bytes_read_now < 0 || ret == 0)
+		/* Error while trying to read from file */
+		if (bytes_read_now < 0 || ret <= 0) {
+			fp->err = -2;
 			break;
+		}
 
 		bytes_read += bytes_read_now;
 
-		/* Interrupted */
+		/* If it could not fill the buffer */
 		if (bytes_read_now < count)
 			break;
 	}
 
 	return bytes_read;
-}
-
-int _sgetc(SO_FILE *fp)
-{
-	int ret = 0;
-
-	/* If prev operation was write, flush the buffer */
-	if (fp->_prev_op == WRITE)
-		so_fflush(fp);
-
-	/* If buffer is empty, or there is not enough data, refill */
-	if (fp->_empty || fp->_br - fp->_buff > fp->_length - 1) {
-		/* Clear junk */
-		memset(fp->_buff, 0 ,FILE_BUFF_SIZE);
-		/* Refill */
-		fp->_length = xread(fp, FILE_BUFF_SIZE);
-		if (fp->_length == 0)
-			return -1;
-		/* Mark the buffer is not empty anymore */
-		fp->_empty = 0;
-		/* Reset the reading cursor */
-		fp->_br = fp->_buff;
-	}
-
-	/* Mark prev operation as read */
-	fp->_prev_op = READ;
-	/* Get the value from the buffer */
-	ret = (unsigned char)*fp->_br;
-	/* Advance reading cursor */
-	fp->_br++;
-
-	return ret;
 }
 
 int xwrite(SO_FILE *fp, size_t count)
@@ -85,12 +57,12 @@ int xwrite(SO_FILE *fp, size_t count)
 	while (bytes_written < count) {
 		ret = WriteFile(fp->_file,
 			fp->_buff + bytes_written,
-			count - bytes_written_now,
+			count - bytes_written,
 			&bytes_written_now,
 			NULL);
 
-		if (bytes_written_now <= 0 || ret == 0) {
-			fp->_err = SO_EOF;
+		if (bytes_written_now <= 0 || ret <= 0) {
+			fp->err = SO_EOF;
 			break;
 		}
 
@@ -98,6 +70,43 @@ int xwrite(SO_FILE *fp, size_t count)
 	}
 
 	return bytes_written;
+}
+
+int _sgetc(SO_FILE *fp)
+{
+	int ret = 0;
+
+	/* If the previous operation was a write, flush the buffer */
+	if (fp->_prev_op == WRITE)
+		so_fflush(fp);
+
+	/**
+	 * If the buffer is empty, or there is not enough data,
+	 *  refresh the buffer
+	 */
+	if (fp->_empty || fp->_br - fp->_buff > fp->_length - 1) {
+		/* Clear junk */
+		memset(fp->_buff, 0, FILE_BUFF_SIZE);
+		/* Refresh */
+		fp->_length = xread(fp, FILE_BUFF_SIZE);
+		if (fp->_length == 0) {
+			return SO_EOF;
+		}
+
+		/* Mark that the buffer is not empty anymore */
+		fp->_empty = 0;
+		/* Reset the reading cursor to the buffer start */
+		fp->_br = fp->_buff;
+	}
+
+	/* Mark the previous opperation as a read */
+	fp->_prev_op = READ;
+	/* Get the value from the buffer */
+	ret = (unsigned char)*fp->_br;
+	/* Advance the reading cursor */
+	fp->_br++;
+
+	return ret;
 }
 
 int _sputc(int c, SO_FILE *fp)
