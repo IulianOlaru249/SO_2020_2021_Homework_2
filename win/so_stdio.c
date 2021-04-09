@@ -22,10 +22,10 @@ SO_FILE *so_fopen(const char *pathname, const char *mode)
 			/* Open stream */
 			fHandle = CreateFile(
 				pathname,
-				GENERIC_ALL,		/* access mode */
-				FILE_SHARE_READ | FILE_SHARE_WRITE, 	/* sharing option */
-				NULL,			/* security attributes */
-				OPEN_EXISTING,		/* open only if it exists */
+				GENERIC_ALL,
+				FILE_SHARE_READ | FILE_SHARE_WRITE,
+				NULL,
+				OPEN_EXISTING,
 				0,
 				NULL
 			);
